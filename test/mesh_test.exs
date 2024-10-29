@@ -1,6 +1,8 @@
 defmodule Hyperweave.MeshTest do
   use ExUnit.Case
-  alias Hyperweave.{Mesh, Node, Coordinates}
+  alias Hyperweave.Mesh
+  alias Hyperweave.Node.Neighbors
+  alias Hyperweave.Coordinates
 
   @moduletag :mesh_tests
 
@@ -219,46 +221,36 @@ defmodule Hyperweave.MeshTest do
     assert map_size(mesh.nodes) == 100
   end
 
-  # @tag :neighbor_integrity
-  # test "each node's neighbors are correctly assigned and reciprocal" do
-  #   mesh = Mesh.new()
+   @tag :neighbor_integrity
+  test "each node's neighbors are correctly assigned and reciprocal" do
+    mesh = Mesh.new()
 
-  #   # Add nodes
-  #   mesh =
-  #     Enum.reduce(1..10, mesh, fn id, acc_mesh ->
-  #       Mesh.add_node(acc_mesh, id)
-  #     end)
+    # Add nodes
+    mesh =
+      Enum.reduce(1..10, mesh, fn id, acc_mesh ->
+        Mesh.add_node(acc_mesh, id)
+      end)
 
-  #   # Verify neighbor connections
-  #   Enum.each(mesh.nodes, fn {coord, node} ->
-  #     node_neighbors = Map.from_struct(node.neighbors)
+    # Verify neighbor connections
+    Enum.each(mesh.nodes, fn {coord, node} ->
+      node_neighbors = node.neighbors
 
-  #     Enum.each(node_neighbors, fn {direction, neighbor_node} ->
-  #       if neighbor_node do
-  #         # Calculate the neighbor's expected coordinate
-  #         neighbor_coord = case direction do
-  #           :x_pos -> Coordinates.new(coord.x + 1, coord.y, coord.z)
-  #           :x_neg -> Coordinates.new(coord.x - 1, coord.y, coord.z)
-  #           :y_pos -> Coordinates.new(coord.x, coord.y + 1, coord.z)
-  #           :y_neg -> Coordinates.new(coord.x, coord.y - 1, coord.z)
-  #           :z_pos -> Coordinates.new(coord.x, coord.y, coord.z + 1)
-  #           :z_neg -> Coordinates.new(coord.x, coord.y, coord.z - 1)
-  #         end
+      Enum.each([:x_pos, :x_neg, :y_pos, :y_neg, :z_pos, :z_neg], fn direction ->
+        neighbor_coord = Neighbors.get_neighbor(node_neighbors, direction)
 
-  #         # Neighbor node should be at the expected coordinate
-  #         assert mesh.nodes[neighbor_coord].id == neighbor_node.id
+        if neighbor_coord do
+          neighbor_node = Map.get(mesh.nodes, neighbor_coord)
+          assert neighbor_node != nil
 
-  #         # Neighbor should have a reciprocal connection
-  #         opposite_dir = opposite_direction(direction)
-  #         neighbor_neighbors = Map.from_struct(neighbor_node.neighbors)
-  #         assert neighbor_neighbors[opposite_dir] != nil
-  #         assert neighbor_neighbors[opposite_dir].id == node.id
-  #       end
-  #     end)
-  #   end)
-  # end
+          # Neighbor should have a reciprocal connection
+          opposite_dir = opposite_direction(direction)
+          neighbor_neighbor_coord = Neighbors.get_neighbor(neighbor_node.neighbors, opposite_dir)
+          assert neighbor_neighbor_coord == coord
+        end
+      end)
+    end)
+  end
 
-  # Helper function to get the opposite direction
   defp opposite_direction(:x_pos), do: :x_neg
   defp opposite_direction(:x_neg), do: :x_pos
   defp opposite_direction(:y_pos), do: :y_neg

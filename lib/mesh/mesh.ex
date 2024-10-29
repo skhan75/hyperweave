@@ -108,40 +108,44 @@ defmodule Hyperweave.Mesh do
   end
 
   # Corrected connect_neighbors/3 function
-  defp connect_neighbors(mesh, node, coord) do
+  defp connect_neighbors(mesh, _node, coord) do
     directions = [
-      {Coordinates.new(coord.x + 1, coord.y, coord.z), :x_pos},
-      {Coordinates.new(coord.x - 1, coord.y, coord.z), :x_neg},
-      {Coordinates.new(coord.x, coord.y + 1, coord.z), :y_pos},
-      {Coordinates.new(coord.x, coord.y - 1, coord.z), :y_neg},
-      {Coordinates.new(coord.x, coord.y, coord.z + 1), :z_pos},
-      {Coordinates.new(coord.x, coord.y, coord.z - 1), :z_neg}
+      {:x_pos, Coordinates.new(coord.x + 1, coord.y, coord.z)},
+      {:x_neg, Coordinates.new(coord.x - 1, coord.y, coord.z)},
+      {:y_pos, Coordinates.new(coord.x, coord.y + 1, coord.z)},
+      {:y_neg, Coordinates.new(coord.x, coord.y - 1, coord.z)},
+      {:z_pos, Coordinates.new(coord.x, coord.y, coord.z + 1)},
+      {:z_neg, Coordinates.new(coord.x, coord.y, coord.z - 1)}
     ]
 
-    {updated_mesh, _updated_node} =
-      Enum.reduce(directions, {mesh, node}, fn {neighbor_coord, direction}, {acc_mesh, acc_node} ->
-        neighbor = Map.get(acc_mesh.nodes, neighbor_coord)
+    updated_nodes = Enum.reduce(directions, mesh.nodes, fn {direction, neighbor_coord}, acc_nodes ->
+      node = Map.get(acc_nodes, coord)
+      neighbor_node = Map.get(acc_nodes, neighbor_coord)
 
-        if neighbor do
-          # Update the node's neighbors
-          acc_node = Node.add_neighbor(acc_node, neighbor, direction)
+      if neighbor_node do
+        # Update the node's neighbors with neighbor's coordinates
+        updated_node = Node.add_neighbor(node, neighbor_coord, direction)
 
-          # Update the neighbor's neighbors
-          neighbor = Node.add_neighbor(neighbor, acc_node, opposite_direction(direction))
+        # Update the neighbor's neighbors with node's coordinates
+        opposite_dir = opposite_direction(direction)
+        updated_neighbor = Node.add_neighbor(neighbor_node, coord, opposite_dir)
 
-          # Update the nodes in the mesh
-          updated_nodes =
-            acc_mesh.nodes
-            |> Map.put(coord, acc_node)
-            |> Map.put(neighbor_coord, neighbor)
+        # Logging the updates
+        IO.puts("Connecting node #{node.id} at #{inspect(coord)}")
+        IO.puts("  Direction: #{direction}")
+        IO.puts("  Neighbor node #{neighbor_node.id} at #{inspect(neighbor_coord)}")
+        IO.puts("  Node #{node.id} neighbors after update: #{inspect(updated_node.neighbors)}")
+        IO.puts("  Neighbor node #{neighbor_node.id} neighbors after update: #{inspect(updated_neighbor.neighbors)}\n")
 
-          {%{acc_mesh | nodes: updated_nodes}, acc_node}
-        else
-          {acc_mesh, acc_node}
-        end
-      end)
+        acc_nodes
+        |> Map.put(coord, updated_node)
+        |> Map.put(neighbor_coord, updated_neighbor)
+      else
+        acc_nodes
+      end
+    end)
 
-    updated_mesh
+    %{mesh | nodes: updated_nodes}
   end
 
   # Maps each direction to its opposite

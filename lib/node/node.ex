@@ -48,8 +48,8 @@ defmodule Hyperweave.Node do
   end
 
   # Adds a neighbor to the node
-  @spec add_neighbor(t(), any(), atom()) :: t()
-  def add_neighbor(node, neighbor, direction) do
-    %{node | neighbors: Neighbors.set_neighbor(node.neighbors, direction, neighbor)}
+  @spec add_neighbor(t(), Coordinates.t(), atom()) :: t()
+  def add_neighbor(node, neighbor_coord, direction) do
+    %{node | neighbors: Neighbors.set_neighbor(node.neighbors, direction, neighbor_coord)}
   end
 end
