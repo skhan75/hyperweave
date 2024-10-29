@@ -4,6 +4,8 @@ defmodule Hyperweave.MeshTest do
   alias Hyperweave.Node.Neighbors
   alias Hyperweave.Coordinates
 
+  Logger.configure(level: :error)
+
   @moduletag :mesh_tests
 
   @tag :initialization
@@ -65,9 +67,17 @@ defmodule Hyperweave.MeshTest do
     node1_neighbors = Map.from_struct(mesh.nodes[coord1].neighbors)
     node2_neighbors = Map.from_struct(mesh.nodes[coord2].neighbors)
 
-    assert Enum.any?(node1_neighbors, fn {_dir, neighbor} -> neighbor && neighbor.id == 2 end)
-    assert Enum.any?(node2_neighbors, fn {_dir, neighbor} -> neighbor && neighbor.id == 1 end)
+    assert Enum.any?(node1_neighbors, fn {_dir, neighbor_coord} ->
+      neighbor = mesh.nodes[neighbor_coord]
+      neighbor && neighbor.id == 2
+    end)
+
+    assert Enum.any?(node2_neighbors, fn {_dir, neighbor_coord} ->
+      neighbor = mesh.nodes[neighbor_coord]
+      neighbor && neighbor.id == 1
+    end)
   end
+
 
   @tag :no_premature_expansion
   test "does not expand the mesh prematurely when positions are available" do
