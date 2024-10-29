@@ -33,7 +33,7 @@ defmodule Hyperweave.Node do
   ]
 
   # Initialize the new node with default attributes
-  @spec new(any(), Coordinates.t()) :: t
+  @spec new(any(), Coordinates.t()) :: t()
   def new(id, coordinates = %Coordinates{}) do
     %__MODULE__{
       id: id,
@@ -48,7 +48,7 @@ defmodule Hyperweave.Node do
   end
 
   # Adds a neighbor to the node
-  @spec add_neighbor(map(), any(), atom()) :: map()
+  @spec add_neighbor(t(), any(), atom()) :: t()
   def add_neighbor(node, neighbor, direction) do
     %{node | neighbors: Neighbors.set_neighbor(node.neighbors, direction, neighbor)}
   end
