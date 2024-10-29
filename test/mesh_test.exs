@@ -328,4 +328,37 @@ defmodule Hyperweave.MeshTest do
     # Verify uniqueness
     assert Enum.uniq(coords) == coords
   end
+
+  @tag :large_mesh_neighbor_assignments
+  test "neighbor assignments are correct in a large mesh" do
+    mesh = Mesh.new()
+
+    # Add a significant number of nodes
+    total_nodes = 100
+    mesh =
+      Enum.reduce(1..total_nodes, mesh, fn id, acc_mesh ->
+        Mesh.add_node(acc_mesh, id)
+      end)
+
+    # Verify neighbor relationships
+    Enum.each(mesh.nodes, fn {coord, node} ->
+      node_neighbors = node.neighbors
+
+      Enum.each([:x_pos, :x_neg, :y_pos, :y_neg, :z_pos, :z_neg], fn direction ->
+        neighbor_coord = Neighbors.get_neighbor(node_neighbors, direction)
+
+        if neighbor_coord do
+          neighbor_node = mesh.nodes[neighbor_coord]
+          assert neighbor_node != nil
+
+          # Check reciprocal neighbor
+          opposite_dir = opposite_direction(direction)
+          neighbor_neighbor_coord = Neighbors.get_neighbor(neighbor_node.neighbors, opposite_dir)
+          assert neighbor_neighbor_coord == coord
+        end
+      end)
+    end)
+  end
+
+
 end
