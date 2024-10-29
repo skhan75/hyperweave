@@ -9,19 +9,19 @@ Hyperweave is an ambitious, decentralized network protocol designed to create a 
 **Contributors**: Open to anyone interested in decentralized technologies
 
 ## Motivation
-
 Traditional infrastructures are costly, inflexible, and often centralized, leading to high costs, potential points of failure, and privacy concerns. Hyperweave aims to provide a decentralized alternative that is scalable, secure, and community-powered, opening up opportunities for cost-efficient, private, and reliable applications and services worldwide.
 
 ## What is Hyperweave?
-
 Hyperweave is a protocol and framework for creating a decentralized network composed of nodes interacting within a 3D mesh structure. The protocol supports resilient data distribution, secure peer-to-peer transfers, and high redundancy while enabling a wide range of decentralized applications, from media distribution to IoT device networks.
 
 ### Key Features
 
-- **3D Mesh Structure**: Enables efficient data sharing, redundancy, and resilience.
+- **3D Mesh Topology**: Utilizes a three-dimensional coordinate system to organize nodes in layers, enhancing scalability and routing efficiency.
 - **Peer-to-Peer Architecture**: Secure data transfers without centralized servers.
-- **High Fault Tolerance**: Enhanced redundancy through distributed multi-layer connections.
-- **Open and Inclusive**: Anyone can join, from individuals to enterprises with large data needs.
+- **Dynamic Layer Management**: Nodes are added to layers based on availability, with automatic expansion to new layers as needed.
+- **Efficient Neighbor Connections**: Each node maintains connections with immediate neighbors, ensuring robust network connectivity and quick data propagation.
+- **High Fault Tolerance**: Designed to handle high node churn rates without compromising network stability.
+- **Optimized Data Lookup**: Implements efficient algorithms for data storage and retrieval, reducing latency and improving user experience.
 
 ## Vision and Goals
 
@@ -30,12 +30,27 @@ Our vision is to democratize access to a scalable, reliable, and cost-effective 
 ### Future Opportunities
 
 1. **Decentralized Storage and Content Distribution**
-2. **IoT Networks and Edge Computing**
+2. **Decentralized Media Rights and Content Management**
 3. **Data Privacy and Security for Sensitive Applications**
-4. **Decentralized Media Rights and Content Management**
+4. **IoT Networks and Edge Computing**
 5. **Democratized Internet Access and Community Networks**
 
-## How Hyperweave Differs from Other Peer-to-Peer Architectures
+## How Hyperweave Fills the Gaps
+Existing P2P architectures often face challenges such as:
+
+- **Scalability Limits**: Difficulty in scaling to a large number of nodes without performance degradation.
+- **Inefficient Routing**: Suboptimal data paths leading to increased latency.
+- **Node Churn Handling**: Vulnerability to frequent node joins and departures, affecting network reliability.
+- **Complex Maintenance**: High overhead in maintaining network structure and data consistency.
+
+Hyperweave addresses these issues by:
+
+- **Scalable Mesh Expansion**: The network grows organically by adding layers, ensuring that new nodes are efficiently integrated without disrupting existing connections.
+- **Optimized Neighbor Relations**: Nodes maintain a fixed number of neighbor connections, simplifying maintenance and enhancing fault tolerance.
+- **Adaptive Layer Filling**: Ensures that each layer is fully utilized before expanding, optimizing resource usage.
+- **Simplified Protocols**: Reduces complexity in network operations, making it easier to implement and manage.
+
+## Comparison with Other P2P Architectures
 
 Hyperweave addresses core limitations found in traditional P2P architectures like **Chord** and **Kademlia** by leveraging an innovative 3D mesh structure. This multidimensional approach provides unique benefits in terms of scalability, redundancy, fault tolerance, data handling, and network efficiency. Here’s what sets Hyperweave apart:
 
