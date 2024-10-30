@@ -109,6 +109,9 @@ defmodule Hyperweave.Mesh do
 
   # Corrected connect_neighbors/3 function
   defp connect_neighbors(mesh, _node, coord) do
+    # Connect to all the 6 neighbors on principal axises
+    # TODO - We could connect to all 26 neigbors in future for increased connectivity and robust network
+    # The following formula gives each of the 27 neighboring coordinates - (x+dx,y+dy,z+dz) where dx,dy,dz∈{−1,0,1}
     directions = [
       {:x_pos, Coordinates.new(coord.x + 1, coord.y, coord.z)},
       {:x_neg, Coordinates.new(coord.x - 1, coord.y, coord.z)},

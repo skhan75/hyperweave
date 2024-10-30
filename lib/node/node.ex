@@ -18,18 +18,20 @@ defmodule Hyperweave.Node do
           metrics: %{
             messages_sent: non_neg_integer(),
             messages_received: non_neg_integer()
-          }
+          },
+          last_heartbeat: integer() | nil
         }
 
   defstruct [
     :id,
     :coordinates,
     :neighbors,
+    :finger_table,
     :state,
     :data_cache,
     :uptime,
     :metrics,
-    :finger_table
+    last_heartbeat: nil
   ]
 
   # Initialize the new node with default attributes
@@ -43,7 +45,8 @@ defmodule Hyperweave.Node do
       state: :active,
       data_cache: %{},
       uptime: 0,
-      metrics: %{messages_sent: 0, messages_received: 0}
+      metrics: %{messages_sent: 0, messages_received: 0},
+      last_heartbeat: System.system_time(:second) # Set the initial last_heartbeat to the current timestamp
     }
   end
 
