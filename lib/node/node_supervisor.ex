@@ -50,8 +50,8 @@ defmodule Hyperweave.Node.NodeSupervisor do
   end
 
   # Handle synchronous call for marking a neighbor as inactive
-  def handle_call({:mark_inactive, direction}, _from, state) do
-    updated_state = mark_neighbor_inactive(state, direction)
+  def handle_call({:mark_inactive, direction, neighbor_id}, _from, state) do
+    updated_state = mark_neighbor_inactive(state, direction, neighbor_id)
     {:reply, :ok, updated_state}
   end
 
@@ -76,7 +76,7 @@ defmodule Hyperweave.Node.NodeSupervisor do
 
           # Mark the neighbor as inactive in the supervisor's internal tracking only
           acc_state
-          |> mark_neighbor_inactive(direction)
+          |> mark_neighbor_inactive(direction, neighbor_coord.id)
           |> notify_mesh_and_routing(neighbor_coord)
         else
           acc_state
@@ -89,7 +89,7 @@ defmodule Hyperweave.Node.NodeSupervisor do
 
 
   # Update the supervisor state when a neighbor is unresponsive (internal marking)
-  defp mark_neighbor_inactive(state, direction) do
+  defp mark_neighbor_inactive(state, direction, expected_neighbor_id) do
     try do
       neighbor = Map.get(state.neighbors, direction)
 
@@ -98,17 +98,23 @@ defmodule Hyperweave.Node.NodeSupervisor do
         nil ->
           Logger.warning("No neighbor found in direction #{inspect(direction)} in supervisor state to mark as inactive.")
           state
+
         # If the neighbor is already inactive, log this information
-        %Node{state: :inactive} ->
+        %Node{id: ^expected_neighbor_id, state: :inactive} ->
           Logger.warning("Neighbor in direction #{inspect(direction)} is already marked as inactive.")
           state
-        # If the neighbor is active, update the local representation in NodeSupervisor's state
-        %Node{} = neighbor_state ->
+
+        # If the neighbor ID matches the expected ID and it's active, mark it inactive
+        %Node{id: ^expected_neighbor_id} = neighbor_state ->
           updated_neighbor = %{neighbor_state | state: :inactive}
           updated_neighbors = Map.put(state.neighbors, direction, updated_neighbor)
-
           Logger.info("Marked neighbor in direction #{inspect(direction)} as inactive in the supervisor state.")
           %{state | neighbors: updated_neighbors}
+
+        # If the neighbor ID does not match, log a mismatch warning
+        %Node{id: neighbor_id} ->
+          Logger.warning("Neighbor mismatch in direction #{inspect(direction)}: expected #{inspect(expected_neighbor_id)}, found #{inspect(neighbor_id)}.")
+          state
       end
     rescue
       exception ->
@@ -116,6 +122,7 @@ defmodule Hyperweave.Node.NodeSupervisor do
         state
     end
   end
+
 
 
   # Notifies the mesh or routing components about the neighbor status change

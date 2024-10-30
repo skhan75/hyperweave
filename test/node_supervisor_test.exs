@@ -87,6 +87,46 @@ defmodule Hyperweave.Node.NodeSupervisorTest do
     assert state.neighbors.y_pos.state == :inactive
   end
 
+  @tag :inactive_neighbor_with_id_check
+  test "marks neighbor inactive only if the neighbor_id matches the expected ID", %{supervisor_pid: pid} do
+    # Set an initial state with an active neighbor
+    :sys.replace_state(pid, fn state ->
+      neighbors = %{
+        x_pos: %Node{id: :neighbor_1, state: :active}
+      }
+      %{state | neighbors: neighbors}
+    end)
+
+    # Capture logs and attempt to mark the neighbor as inactive using the correct neighbor_id
+    log =
+      capture_log(fn ->
+        GenServer.call(pid, {:mark_inactive, :x_pos, :neighbor_1})  # Correct ID
+      end)
+
+    # Check log to verify the neighbor was marked inactive
+    assert log =~ "Marked neighbor in direction :x_pos as inactive in the supervisor state."
+
+    # Fetch the updated state
+    state = :sys.get_state(pid)
+
+    # Assert the neighbor was marked as inactive
+    assert state.neighbors.x_pos.state == :inactive
+
+    # Now, test with an incorrect neighbor_id
+    log_mismatch =
+      capture_log(fn ->
+        GenServer.call(pid, {:mark_inactive, :x_pos, :incorrect_id})  # Incorrect ID
+      end)
+
+    # Verify that a mismatch log is captured
+    assert log_mismatch =~ "Neighbor mismatch in direction :x_pos: expected :incorrect_id, found :neighbor_1."
+
+    # Verify the neighbor state remains unchanged as inactive
+    state = :sys.get_state(pid)
+    assert state.neighbors.x_pos.state == :inactive
+  end
+
+
   @tag :update_neighbor_status
   test "handle_cast correctly updates neighbor status", %{supervisor_pid: pid} do
     # Update the state to add neighbors in specific directions
@@ -107,8 +147,8 @@ defmodule Hyperweave.Node.NodeSupervisorTest do
 
     log =
       capture_log(fn ->
-        # Attempt to mark a non-existent neighbor as inactive
-        GenServer.call(pid, {:mark_inactive, :nonexistent_neighbor})
+        # Attempt to mark a non-existent neighbor as inactive with a placeholder ID
+        GenServer.call(pid, {:mark_inactive, :nonexistent_neighbor, :placeholder_id})
       end)
 
     # Verify that the correct error message was logged
@@ -127,7 +167,7 @@ defmodule Hyperweave.Node.NodeSupervisorTest do
     # Capture logs and attempt to mark the already inactive neighbor
     log =
       capture_log(fn ->
-        GenServer.call(pid, {:mark_inactive, :x_pos})
+        GenServer.call(pid, {:mark_inactive, :x_pos, :neighbor_1})
       end)
 
     # Verify the log message indicates the neighbor was already inactive
