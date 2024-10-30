@@ -1,24 +1,26 @@
 defmodule Hyperweave.MeshTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false
   alias Hyperweave.Mesh
   alias Hyperweave.Node.Neighbors
   alias Hyperweave.Coordinates
 
-  Logger.configure(level: :error)
-
   @moduletag :mesh_tests
 
-  @tag :initialization
-  test "initializes an empty mesh with layer 0" do
+  # Setup block to initialize a fresh Mesh instance for each test
+  setup do
+    # Initialize the mesh instance and assign it to the test context
     mesh = Mesh.new()
+    {:ok, mesh: mesh}
+  end
+
+  @tag :initialization
+  test "initializes an empty mesh with layer 0", %{mesh: mesh} do
     assert map_size(mesh.nodes) == 0
     assert mesh.layer == 0
   end
 
   @tag :add_first_node
-  test "adds the first node at the center of the mesh in layer 0" do
-    mesh = Mesh.new()
-
+  test "adds the first node at the center of the mesh in layer 0", %{mesh: mesh} do
     # Add the first node
     mesh = Mesh.add_node(mesh, 1)
     coordinates = Coordinates.new(0, 0, 0)
@@ -30,9 +32,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :add_node_layer_1
-  test "adds nodes to layer 1 and updates mesh.layer accordingly" do
-    mesh = Mesh.new()
-
+  test "adds nodes to layer 1 and updates mesh.layer accordingly", %{mesh: mesh} do
     # Add the first node
     mesh = Mesh.add_node(mesh, 1)
     assert mesh.layer == 0
@@ -50,9 +50,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :neighbor_connections
-  test "nodes connect correctly to their neighbors" do
-    mesh = Mesh.new()
-
+  test "nodes connect correctly to their neighbors", %{mesh: mesh} do
     # Add the first node
     mesh = Mesh.add_node(mesh, 1)
     coord1 = Coordinates.new(0, 0, 0)
@@ -80,9 +78,7 @@ defmodule Hyperweave.MeshTest do
 
 
   @tag :no_premature_expansion
-  test "does not expand the mesh prematurely when positions are available" do
-    mesh = Mesh.new()
-
+  test "does not expand the mesh prematurely when positions are available", %{mesh: mesh} do
     # Add the first node
     mesh = Mesh.add_node(mesh, 1)
     assert mesh.layer == 0
@@ -101,8 +97,8 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :fill_layer_1
-  test "fills layer 1 completely before expanding to layer 2" do
-    mesh = Mesh.new()
+  test "fills layer 1 completely before expanding to layer 2", %{mesh: mesh} do
+
 
     # Add nodes to fill layer 1 (total of 26 positions in layer 1)
     mesh =
@@ -124,8 +120,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :mesh_expansion
-  test "expands the mesh to layer 2 when layer 1 is full" do
-    mesh = Mesh.new()
+  test "expands the mesh to layer 2 when layer 1 is full", %{mesh: mesh} do
 
     # Fill layer 1
     mesh =
@@ -149,8 +144,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :correct_node_placement
-  test "adds nodes to correct coordinates based on availability, filling layer 0 and 1" do
-    mesh = Mesh.new()
+  test "adds nodes to correct coordinates based on availability, filling layer 0 and 1", %{mesh: mesh} do
 
     # Add nodes and keep track of their coordinates
     {mesh, coords} =
@@ -183,8 +177,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :layer_calculation
-  test "calculates mesh.layer correctly based on nodes present" do
-    mesh = Mesh.new()
+  test "calculates mesh.layer correctly based on nodes present", %{mesh: mesh} do
     assert mesh.layer == 0
 
     # Add nodes to layer 1
@@ -219,8 +212,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :node_count
-  test "total node count matches the expected number of added nodes" do
-    mesh = Mesh.new()
+  test "total node count matches the expected number of added nodes", %{mesh: mesh} do
 
     # Add 100 nodes
     mesh =
@@ -232,9 +224,7 @@ defmodule Hyperweave.MeshTest do
   end
 
    @tag :neighbor_integrity
-  test "each node's neighbors are correctly assigned and reciprocal" do
-    mesh = Mesh.new()
-
+  test "each node's neighbors are correctly assigned and reciprocal", %{mesh: mesh} do
     # Add nodes
     mesh =
       Enum.reduce(1..10, mesh, fn id, acc_mesh ->
@@ -269,8 +259,7 @@ defmodule Hyperweave.MeshTest do
   defp opposite_direction(:z_neg), do: :z_pos
 
   @tag :layer_filling_order
-  test "fills layers in order before expanding to the next layer" do
-    mesh = Mesh.new()
+  test "fills layers in order before expanding to the next layer", %{mesh: mesh} do
 
     # Add nodes to fill layer 1
     mesh =
@@ -298,8 +287,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :multiple_layer_expansion
-  test "expands to multiple layers as nodes are added" do
-    mesh = Mesh.new()
+  test "expands to multiple layers as nodes are added", %{mesh: mesh} do
 
     # Add nodes to fill up to layer 3
     total_nodes = 1 + 26 + 98 + 218  # Nodes in layers 0 to 3
@@ -313,8 +301,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :coordinate_uniqueness
-  test "ensures all node coordinates are unique" do
-    mesh = Mesh.new()
+  test "ensures all node coordinates are unique", %{mesh: mesh} do
 
     # Add nodes
     mesh =
@@ -330,8 +317,7 @@ defmodule Hyperweave.MeshTest do
   end
 
   @tag :large_mesh_neighbor_assignments
-  test "neighbor assignments are correct in a large mesh" do
-    mesh = Mesh.new()
+  test "neighbor assignments are correct in a large mesh", %{mesh: mesh} do
 
     # Add a significant number of nodes
     total_nodes = 100
