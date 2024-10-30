@@ -1,14 +1,8 @@
-defmodule Hyperweave.NodeSupervisor do
+defmodule Hyperweave.Node.NodeSupervisor do
   use GenServer
   require Logger
 
-  # Define a struct for the state
-  defstruct [
-    :node_id,
-    :neighbors,        # Map of neighbors and their states
-    :last_heartbeat,   # Map of neighbor IDs to last heartbeat timestamps
-    :metrics           # Additional performance metrics if needed
-  ]
+  alias Hyperweave.Node.State
 
   # Set up heartbeat intervals and timeouts, falling back to defaults if not set in config.
   @heartbeat_interval Application.compile_env(:hyperweave, :heartbeat_interval) || 5_000 # 5 seconds
@@ -26,7 +20,7 @@ defmodule Hyperweave.NodeSupervisor do
     Logger.info("Initializing NodeSupervisor for node #{node_id}.")
 
     # Initialize with initial state
-    initial_state = %__MODULE__{
+    initial_state = %State{
       node_id: node_id,
       neighbors: %{},
       last_heartbeat: %{},
