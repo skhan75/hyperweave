@@ -55,4 +55,11 @@ defmodule Hyperweave.Node do
   def add_neighbor(node, neighbor_coord, direction) do
     %{node | neighbors: Neighbors.set_neighbor(node.neighbors, direction, neighbor_coord)}
   end
+
+  # Removes a neighbor from the node
+  @spec remove_neighbor(t(), atom()) :: t()
+  def remove_neighbor(node, direction) do
+    updated_neighbors = Neighbors.set_neighbor(node.neighbors, direction, nil)
+    %{node | neighbors: updated_neighbors}
+  end
 end

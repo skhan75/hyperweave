@@ -58,6 +58,43 @@ defmodule Hyperweave.Mesh do
   end
 
   @doc """
+  Removes a node from the mesh at the given coordinates, disconnecting it from its neighbors.
+  """
+  @spec remove_node(t(), any()) :: t()
+  def remove_node(%__MODULE__{} = mesh, node_id) do
+    # Locate the node by ID
+    coord = find_node_coordinate_by_id(mesh.nodes, node_id)
+
+    case coord do
+      nil ->
+        IO.puts("No node found with ID #{node_id}.")
+        mesh
+
+      _ ->
+        IO.puts("Removing node with ID #{node_id} at coordinates #{inspect(coord)}.")
+
+        # Mark node as 'leaving' to prevent interference
+        updated_nodes = Map.update!(mesh.nodes, coord, &Node.mark_leaving(&1))
+
+        # Disconnect neighbors and delete the node
+        updated_nodes = disconnect_neighbors(updated_nodes, coord)
+        updated_nodes = Map.delete(updated_nodes, coord)
+
+        # Update mesh and recalculate layer
+        new_mesh = %{mesh | nodes: updated_nodes}
+        %{new_mesh | layer: calculate_mesh_layer(new_mesh.nodes)}
+    end
+  end
+
+  # Helper function to locate a node's coordinate by its ID
+  defp find_node_coordinate_by_id(nodes, node_id) do
+    nodes
+    |> Enum.find_value(fn {coord, node} ->
+      if node.id == node_id, do: coord, else: nil
+    end)
+  end
+
+  @doc """
   Checks if the mesh is empty (no nodes).
   """
   @spec is_empty?(t()) :: boolean()
@@ -151,6 +188,38 @@ defmodule Hyperweave.Mesh do
     %{mesh | nodes: updated_nodes}
   end
 
+  # Disconnects a node from its neighbors, updating the neighbors of adjacent nodes
+  defp disconnect_neighbors(nodes, coord) do
+    directions = [
+      {:x_pos, Coordinates.new(coord.x + 1, coord.y, coord.z)},
+      {:x_neg, Coordinates.new(coord.x - 1, coord.y, coord.z)},
+      {:y_pos, Coordinates.new(coord.x, coord.y + 1, coord.z)},
+      {:y_neg, Coordinates.new(coord.x, coord.y - 1, coord.z)},
+      {:z_pos, Coordinates.new(coord.x, coord.y, coord.z + 1)},
+      {:z_neg, Coordinates.new(coord.x, coord.y, coord.z - 1)}
+    ]
+
+    Enum.reduce(directions, nodes, fn {direction, neighbor_coord}, acc_nodes ->
+      node = Map.get(acc_nodes, coord)
+      neighbor_node = Map.get(acc_nodes, neighbor_coord)
+
+      if neighbor_node do
+        opposite_dir = opposite_direction(direction)
+
+        # Remove the node from the neighbor's list
+        updated_neighbor = Node.remove_neighbor(neighbor_node, opposite_dir)
+        updated_nodes = Map.put(acc_nodes, neighbor_coord, updated_neighbor)
+
+        # Log the disconnection
+        IO.puts("Disconnecting node #{node.id} from neighbor #{neighbor_node.id} at #{inspect(neighbor_coord)}")
+
+        updated_nodes
+      else
+        acc_nodes
+      end
+    end)
+  end
+
   # Maps each direction to its opposite
   defp opposite_direction(:x_pos), do: :x_neg
   defp opposite_direction(:x_neg), do: :x_pos
@@ -158,5 +227,30 @@ defmodule Hyperweave.Mesh do
   defp opposite_direction(:y_neg), do: :y_pos
   defp opposite_direction(:z_pos), do: :z_neg
   defp opposite_direction(:z_neg), do: :z_pos
+
+  # Recalculates the highest layer containing nodes.
+  defp calculate_mesh_layer(nodes) do
+    nodes
+    |> Map.keys()
+    |> Enum.map(&calculate_layer/1)
+    |> Enum.max(fn -> 0 end)
+  end
+
+  # Calculates the layer of a given coordinate.
+  defp calculate_layer(%Coordinates{x: x, y: y, z: z}) do
+    Enum.max([abs(x), abs(y), abs(z)])
+  end
+
+  # Returns neighbor coordinates in six principal directions.
+  defp neighbor_directions(coord) do
+    [
+      {:x_pos, Coordinates.new(coord.x + 1, coord.y, coord.z)},
+      {:x_neg, Coordinates.new(coord.x - 1, coord.y, coord.z)},
+      {:y_pos, Coordinates.new(coord.x, coord.y + 1, coord.z)},
+      {:y_neg, Coordinates.new(coord.x, coord.y - 1, coord.z)},
+      {:z_pos, Coordinates.new(coord.x, coord.y, coord.z + 1)},
+      {:z_neg, Coordinates.new(coord.x, coord.y, coord.z - 1)}
+    ]
+  end
 
 end

@@ -22,8 +22,9 @@ defmodule Hyperweave.Node.Neighbors do
     %__MODULE__{}
   end
 
-  # Sets a specific neighbor in the given direction
-  @spec set_neighbor(t(), atom(), Coordinates.t()) :: t()
+  # Sets a specific neighbor in the given direction; `neighbor_coord` can be a Coordinates struct or `nil`
+  # `nil` represents an empty slot
+  @spec set_neighbor(t(), atom(), Coordinates.t() | nil) :: t()
   def set_neighbor(neighbors, direction, neighbor_coord) when direction in [:x_pos, :x_neg, :y_pos, :y_neg, :z_pos, :z_neg] do
     Map.put(neighbors, direction, neighbor_coord)
   end
