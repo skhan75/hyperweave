@@ -28,16 +28,28 @@ defmodule Hyperweave.Mesh.HilbertSpaceFillingCurve do
   ## Example
 
       iex> Hyperweave.Mesh.HilbertSpaceFillingCurve.hilbert_3d(2, 10)
-      %Hyperweave.Coordinates{x: 1, y: 2, z: 0}
+      %Hyperweave.Coordinates{x: 0, y: 1, z: 3}
 
   """
   @spec hilbert_3d(integer(), integer()) :: Coordinates.t()
-  def hilbert_3d(order, index) do
+  def hilbert_3d(order, index) when is_integer(order) and order > 0 and is_integer(index) and index >= 0 do
+    max_index = trunc(:math.pow(2, 3 * order)) - 1
+
+    if index > max_index do
+      raise ArgumentError,
+            "Index #{index} is out of range for order #{order}. Valid indices are from 0 to #{max_index}."
+    end
+
     # Convert the Hilbert index to coordinates
     {x, y, z} = hilbert_index_to_point(index, order)
 
     # Return the coordinates as a struct
     Coordinates.new(x, y, z)
+  end
+
+  def hilbert_3d(_order, _index) do
+    raise ArgumentError,
+          "Invalid order or index. Order must be a positive integer, and index must be a non-negative integer within the valid range."
   end
 
   # Converts a Hilbert index to 3D coordinates using recursive decoding
