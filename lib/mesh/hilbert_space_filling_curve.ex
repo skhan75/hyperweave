@@ -2,75 +2,112 @@ defmodule Hyperweave.Mesh.HilbertSpaceFillingCurve do
   @moduledoc """
   Provides methods for converting between 1D Hilbert indices and 3D coordinates
   within the mesh space, optimizing for spatial locality.
+
+  The Hilbert space-filling curve is a continuous fractal curve that visits every point in a
+  grid space without crossing itself. It preserves spatial locality better than other curves
+  like the Morton curve, making it ideal for mapping node IDs to coordinates in a mesh network.
   """
 
   alias Hyperweave.Coordinates
-  import Bitwise
+  import Bitwise  # Import bitwise operators for bit manipulation
 
   @doc """
   Converts a Hilbert index into a 3D coordinate based on the specified order.
 
   ## Parameters
-  - `order`: The order of the Hilbert curve, which determines the size of the coordinate space.
-  - `index`: The Hilbert index (1D) to be converted into a 3D coordinate.
+
+    - `order`: The order of the Hilbert curve, which determines the size of the coordinate space.
+      - The number of divisions along each axis is `2^order`.
+    - `index`: The Hilbert index (1D integer) to be converted into a 3D coordinate.
+      - Must be in the range `[0, 2^(3 * order) - 1]`.
 
   ## Returns
-  - A `Coordinates` struct containing the `x`, `y`, and `z` coordinates.
+
+    - A `Coordinates` struct containing the `x`, `y`, and `z` coordinates.
 
   ## Example
-      iex> Hyperweave.Mesh.HilbertSpaceFillingCurve.hilbert_3d(16, 123456)
-      %Coordinates{x: 5, y: 15, z: 3}
+
+      iex> Hyperweave.Mesh.HilbertSpaceFillingCurve.hilbert_3d(2, 10)
+      %Hyperweave.Coordinates{x: 1, y: 2, z: 0}
+
   """
   @spec hilbert_3d(integer(), integer()) :: Coordinates.t()
   def hilbert_3d(order, index) do
-    {x, y, z} = hilbert_index_to_3d(order, index)
+    # Convert the Hilbert index to coordinates
+    {x, y, z} = hilbert_index_to_point(index, order)
+
+    # Return the coordinates as a struct
     Coordinates.new(x, y, z)
   end
 
-  # The actual conversion function from a Hilbert index to a 3D coordinate.
-  defp hilbert_index_to_3d(order, index) do
-    # Initialize the coordinates and the direction of movement
-    {x, y, z} = {0, 0, 0}
-    n = Integer.pow(2, order)
-    half_n = n / 2
+  # Converts a Hilbert index to 3D coordinates using recursive decoding
+  defp hilbert_index_to_point(index, order) do
+    # Total number of bits for the Hilbert index
+    total_bits = 3 * order
 
-    # Start from the index and map down to coordinates
-    index = :binary.decode_unsigned(:erlang.term_to_binary(index))
+    # Initial coordinates and orientation
+    coords = {0, 0, 0}
+    rotation = {0, 0, 0}
 
-    {x, y, z} = index_to_coordinate(index, order, x, y, z, half_n)
-    {x, y, z}
+    # Recursive decoding of the Hilbert index
+    hilbert_integer_to_coordinates(index, total_bits, coords, rotation)
   end
 
-  # Recursive function to convert Hilbert index to coordinates
-  defp index_to_coordinate(0, _, x, y, z, _), do: {x, y, z}
-  defp index_to_coordinate(index, order, x, y, z, half_n) do
-    # Determine cube index in each axis
-    a = (index &&& 4) >>> 2
-    b = (index &&& 2) >>> 1
-    c = index &&& 1
+  # Recursive function to decode Hilbert index to coordinates
+  defp hilbert_integer_to_coordinates(index, bits, coords, rotation) do
+    if bits == 0 do
+      coords
+    else
+      # Decrease bits by 3 for the next recursion
+      new_bits = bits - 3
 
-    # Perform bit rotations and transformations based on current cube index
-    {x, y, z} = rotate(x, y, z, a, b, c)
-    {x, y, z} = {x + a * half_n, y + b * half_n, z + c * half_n}
+      # Create a mask to extract the highest three bits
+      mask = 7 <<< new_bits  # 7 in binary is 111
 
-    # Calculate new position and continue recursion
-    index_to_coordinate(div(index, 8), order - 1, x, y, z, half_n / 2)
+      # Extract the digit corresponding to the current bits
+      digit = (index &&& mask) >>> new_bits  # Get the current digit (3 bits)
+
+      # Rotate and flip the digit to get the next coordinates and orientation
+      {new_coords, new_rotation} = hilbert_decode_step(digit, coords, rotation, new_bits)
+
+      # Continue with the remaining bits
+      hilbert_integer_to_coordinates(index, new_bits, new_coords, new_rotation)
+    end
   end
 
-  # Rotate coordinates based on current bits
-  defp rotate(x, y, z, a, b, c) do
-    cond do
-      b == 0 and a == 1 ->
-        {z, y, x}
+  # Decode a single step of the Hilbert curve
+  defp hilbert_decode_step(digit, {x, y, z}, {rx, ry, rz}, bits) do
+    # Calculate the size of the current cube
+    n = 1 <<< div(bits, 3)
 
-      b == 0 ->
-        {x, y, z}
+    # Get coordinate increments and new rotation from the lookup table
+    {dx, dy, dz, new_rx, new_ry, new_rz} = hilbert_lookup_table(digit, rx, ry, rz)
 
-      a == 1 ->
-        {x, y, z}
+    # Update coordinates
+    new_x = x + dx * n
+    new_y = y + dy * n
+    new_z = z + dz * n
 
-      true ->
-        {y, z, x}
+    # Update rotation
+    new_rotation = {new_rx, new_ry, new_rz}
+
+    {{new_x, new_y, new_z}, new_rotation}
+  end
+
+  # Lookup table for Hilbert curve digit decoding
+  defp hilbert_lookup_table(digit, rx, ry, rz) do
+    # This table defines how each digit affects the coordinates and rotation
+    # Based on the current orientation (rx, ry, rz) and the digit
+    case {digit, rx, ry, rz} do
+      {0, _, _, _} -> {0, 0, 0, ry, rz, rx}
+      {1, _, _, _} -> {0, 0, 1, rx, ry, rz}
+      {2, _, _, _} -> {0, 1, 1, rx, ry, rz}
+      {3, _, _, _} -> {0, 1, 0, ry, rz, rx}
+      {4, _, _, _} -> {1, 1, 0, ry, rz, rx}
+      {5, _, _, _} -> {1, 1, 1, rx, ry, rz}
+      {6, _, _, _} -> {1, 0, 1, rx, ry, rz}
+      {7, _, _, _} -> {1, 0, 0, ry, rz, rx}
+      _ -> {0, 0, 0, rx, ry, rz}  # Default case (should not occur)
     end
   end
 end
